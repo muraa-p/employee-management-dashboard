@@ -1,4 +1,5 @@
 import { supabase } from '../supabase.js';
+import { blockDemoWrite } from '../demo-mode.js';
 
 export async function renderSettings(container, employee) {
   // Get latest employee info (in case it changed)
@@ -74,6 +75,7 @@ export async function renderSettings(container, employee) {
 
   document.getElementById('profile-form').addEventListener('submit', async (e) => {
     e.preventDefault();
+    if (blockDemoWrite(employee, 'Profile edits are disabled in the public demo.')) return;
     const btn = document.getElementById('btn-save-profile');
     const ogText = btn.textContent;
     btn.textContent = 'Saving...';
@@ -100,6 +102,7 @@ export async function renderSettings(container, employee) {
 
   document.getElementById('password-form').addEventListener('submit', async (e) => {
     e.preventDefault();
+    if (blockDemoWrite(employee, 'Password changes are disabled in the public demo.')) return;
     const fd = new FormData(e.target);
     const pass = fd.get('password');
     const conf = fd.get('confirm_password');

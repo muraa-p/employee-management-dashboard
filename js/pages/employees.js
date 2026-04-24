@@ -1,4 +1,5 @@
 import { supabase } from '../supabase.js';
+import { blockDemoWrite, isReadOnlyDemo } from '../demo-mode.js';
 
 export async function renderEmployees(container, employee) {
   container.innerHTML = `
@@ -28,7 +29,7 @@ export async function renderEmployees(container, employee) {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <input type="text" id="emp-search" placeholder="Search" />
           </div>
-          <button class="btn btn-dark" id="add-employee-btn">
+          <button class="btn btn-dark" id="add-employee-btn" ${isReadOnlyDemo(employee) ? 'disabled title="Disabled in public demo"' : ''}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add Employee
           </button>
@@ -54,9 +55,9 @@ export async function renderEmployees(container, employee) {
     <div id="employee-modal"></div>
   `;
 
-  loadEmployeeData();
-  setupFilters();
-  setupAddEmployee();
+  loadEmployeeData(employee);
+  setupFilters(employee);
+  setupAddEmployee(employee);
 }
 
 const AVATAR_COLORS = ['#3B82F6','#22C55E','#F59E0B','#EF4444','#8B5CF6','#EC4899','#06B6D4','#6366F1'];
@@ -71,7 +72,7 @@ function getInitials(name) {
   return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 }
 
-async function loadEmployeeData(filters = {}) {
+async function loadEmployeeData(employee, filters = {}) {
   let query = supabase.from('employees').select('*, departments(name)');
 
   if (filters.department) query = query.eq('department_id', filters.department);
@@ -167,8 +168,9 @@ async function loadEmployeeData(filters = {}) {
   tbody.querySelectorAll('.delete-emp').forEach(btn => {
     btn.addEventListener('click', async () => {
       if (confirm('Delete this employee?')) {
+        if (blockDemoWrite(employee, 'Employee deletion is disabled in the public demo.')) return;
         await supabase.from('employees').delete().eq('id', btn.dataset.id);
-        loadEmployeeData(getCurrentFilters());
+        loadEmployeeData(employee, getCurrentFilters());
       }
     });
   });
@@ -176,7 +178,7 @@ async function loadEmployeeData(filters = {}) {
   // Attach edit handlers
   tbody.querySelectorAll('.edit-emp').forEach(btn => {
     btn.addEventListener('click', () => {
-      showEmployeeModal(btn.dataset.id);
+      showEmployeeModal(btn.dataset.id, employee);
     });
   });
 }
@@ -190,7 +192,7 @@ function getCurrentFilters() {
   };
 }
 
-async function setupFilters() {
+async function setupFilters(employee) {
   // Load departments into filter
   const { data: depts } = await supabase.from('departments').select('id, name').order('name');
   const deptFilter = document.getElementById('dept-filter');
@@ -205,23 +207,24 @@ async function setupFilters() {
 
   // Add event listeners
   ['dept-filter', 'status-filter', 'sort-filter'].forEach(id => {
-    document.getElementById(id)?.addEventListener('change', () => loadEmployeeData(getCurrentFilters()));
+    document.getElementById(id)?.addEventListener('change', () => loadEmployeeData(employee, getCurrentFilters()));
   });
 
   let searchTimeout;
   document.getElementById('emp-search')?.addEventListener('input', (e) => {
     clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(() => loadEmployeeData(getCurrentFilters()), 300);
+    searchTimeout = setTimeout(() => loadEmployeeData(employee, getCurrentFilters()), 300);
   });
 }
 
-function setupAddEmployee() {
+function setupAddEmployee(employee) {
   document.getElementById('add-employee-btn')?.addEventListener('click', () => {
-    showEmployeeModal();
+    if (blockDemoWrite(employee, 'Adding employees is disabled in the public demo.')) return;
+    showEmployeeModal(null, employee);
   });
 }
 
-async function showEmployeeModal(employeeId = null) {
+async function showEmployeeModal(employeeId = null, currentEmployee = null) {
   const { data: depts } = await supabase.from('departments').select('id, name').order('name');
   let employee = null;
 
@@ -288,6 +291,7 @@ async function showEmployeeModal(employeeId = null) {
 
   document.getElementById('employee-form').addEventListener('submit', async (e) => {
     e.preventDefault();
+    if (blockDemoWrite(currentEmployee, 'Employee changes are disabled in the public demo.')) return;
     const formData = new FormData(e.target);
     const data = Object.fromEntries(formData);
 
@@ -317,6 +321,6 @@ async function showEmployeeModal(employeeId = null) {
     }
 
     modal.innerHTML = '';
-    loadEmployeeData(getCurrentFilters());
+    loadEmployeeData(currentEmployee, getCurrentFilters());
   });
 }

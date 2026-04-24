@@ -1,6 +1,7 @@
 import './style.css';
 import { supabase, getCurrentEmployee, clearCurrentEmployee } from './js/supabase.js';
 import { initRouter, navigate } from './js/router.js';
+import { isPublicDemoMode, isReadOnlyDemo } from './js/demo-mode.js';
 
 // HR pages
 import { renderDashboard } from './js/pages/dashboard.js';
@@ -62,6 +63,7 @@ function buildSidebar(employee) {
         <div class="sidebar-user-details">
           <div class="sidebar-user-name">${employee?.name || 'User'}</div>
           <span class="role-badge ${isHR ? 'role-hr' : 'role-emp'}">${isHR ? 'HR' : 'Employee'}</span>
+          ${isReadOnlyDemo(employee) ? '<div style="font-size:11px;color:var(--c-gray-500);margin-top:2px">Public demo mode</div>' : ''}
         </div>
       </div>
     `;
@@ -119,6 +121,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     buildSidebar(employee);
+    const demoBanner = document.getElementById('demo-banner');
+    if (demoBanner) {
+      if (isReadOnlyDemo(employee)) {
+        demoBanner.textContent = 'You are viewing the public demo. Data-changing actions are disabled for shared demo accounts.';
+        demoBanner.classList.remove('hidden');
+      } else {
+        demoBanner.classList.add('hidden');
+      }
+    }
 
     const isHR = employee.role_type === 'hr';
 
@@ -165,6 +176,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     toggleLink?.addEventListener('click', (e) => {
       e.preventDefault();
+      if (isPublicDemoMode()) {
+        errorEl.textContent = 'Public sign-up is disabled for this demo.';
+        errorEl.classList.remove('hidden');
+        return;
+      }
       isSignUp = !isSignUp;
       submitBtn.textContent = isSignUp ? 'Create Account' : 'Sign In';
       document.querySelector('.auth-container h1').textContent = isSignUp ? 'Create Account' : 'Welcome Back';

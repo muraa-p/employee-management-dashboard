@@ -1,4 +1,5 @@
 import { supabase } from '../supabase.js';
+import { blockDemoWrite, isReadOnlyDemo } from '../demo-mode.js';
 
 const SORT_MAP = {
   name:       { col: 'name',       asc: true  },
@@ -14,7 +15,7 @@ export async function renderProjects(container, employee) {
   container.innerHTML = `
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
       <h1 class="page-title" style="margin-bottom:0">Projects</h1>
-      <button class="btn btn-dark" id="add-project-btn">
+      <button class="btn btn-dark" id="add-project-btn" ${isReadOnlyDemo(employee) ? 'disabled title="Disabled in public demo"' : ''}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Add Project
       </button>
@@ -111,7 +112,7 @@ export async function renderProjects(container, employee) {
 
     // Wire up Members buttons
     grid.querySelectorAll('.members-btn').forEach(btn => {
-      btn.addEventListener('click', () => showMembersModal(btn.dataset.id, btn.dataset.name));
+      btn.addEventListener('click', () => showMembersModal(btn.dataset.id, btn.dataset.name, employee));
     });
     // Wire up Tasks buttons
     grid.querySelectorAll('.tasks-btn').forEach(btn => {
@@ -143,12 +144,15 @@ export async function renderProjects(container, employee) {
   });
 
   // Add project
-  document.getElementById('add-project-btn')?.addEventListener('click', () => showAddProjectModal(load));
+  document.getElementById('add-project-btn')?.addEventListener('click', () => {
+    if (blockDemoWrite(employee, 'Project creation is disabled in the public demo.')) return;
+    showAddProjectModal(load, employee);
+  });
 
   load();
 }
 
-function showAddProjectModal(onSuccess) {
+function showAddProjectModal(onSuccess, employee) {
   const modal = document.getElementById('project-modal');
   if (!modal) return;
 
@@ -189,6 +193,7 @@ function showAddProjectModal(onSuccess) {
 
     document.getElementById('proj-form').addEventListener('submit', async (e) => {
       e.preventDefault();
+      if (blockDemoWrite(employee, 'Project creation is disabled in the public demo.')) return;
       const btn = document.getElementById('proj-submit');
       btn.disabled = true; btn.textContent = 'Creating...';
       const data = Object.fromEntries(new FormData(e.target));
@@ -200,7 +205,7 @@ function showAddProjectModal(onSuccess) {
   });
 }
 
-async function showMembersModal(projectId, projectName) {
+async function showMembersModal(projectId, projectName, employee) {
   const modal = document.getElementById('project-modal');
 
   const [{ data: allEmps }, { data: currentMembers }] = await Promise.all([
@@ -236,6 +241,7 @@ async function showMembersModal(projectId, projectName) {
   document.getElementById('members-modal-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) modal.innerHTML = ''; });
 
   document.getElementById('mem-save').addEventListener('click', async () => {
+    if (blockDemoWrite(employee, 'Project membership changes are disabled in the public demo.')) return;
     const checked = [...modal.querySelectorAll('input[type=checkbox]:checked')].map(cb => cb.value);
     // Delete old, insert new
     await supabase.from('project_members').delete().eq('project_id', projectId);
@@ -319,7 +325,12 @@ async function showTasksModal(projectId, projectName, employee) {
     if (e.target.matches('.task-status-select')) {
       const tid = e.target.dataset.tid;
       const newStatus = e.target.value;
+      if (blockDemoWrite(employee, 'Task updates are disabled in the public demo.')) {
+        e.target.value = e.target.defaultValue;
+        return;
+      }
       await supabase.from('tasks').update({ status: newStatus }).eq('id', tid);
+      e.target.defaultValue = newStatus;
       // Update check indicator
       const check = modal.querySelector(`.task-item-check[data-tid="${tid}"]`);
       if (check) { check.className = `task-item-check ${newStatus}`; }
@@ -331,6 +342,7 @@ async function showTasksModal(projectId, projectName, employee) {
     const btn = e.target.closest('.del-task');
     if (!btn) return;
     if (confirm('Delete this task?')) {
+      if (blockDemoWrite(employee, 'Task deletion is disabled in the public demo.')) return;
       await supabase.from('tasks').delete().eq('id', btn.dataset.tid);
       const { data: updated } = await supabase.from('tasks').select('*, employees!tasks_assigned_to_fkey(name)').eq('project_id', projectId).order('created_at');
       document.getElementById('tasks-list').innerHTML = renderTasks(updated);
@@ -340,6 +352,7 @@ async function showTasksModal(projectId, projectName, employee) {
   // Add task
   document.getElementById('add-task-form').addEventListener('submit', async (e) => {
     e.preventDefault();
+    if (blockDemoWrite(employee, 'Task creation is disabled in the public demo.')) return;
     const d = Object.fromEntries(new FormData(e.target));
     d.project_id = projectId;
     if (!d.assigned_to) delete d.assigned_to;

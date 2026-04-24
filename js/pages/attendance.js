@@ -1,5 +1,6 @@
 import { supabase } from '../supabase.js';
 import Chart from 'chart.js/auto';
+import { blockDemoWrite, isReadOnlyDemo } from '../demo-mode.js';
 
 let donutChart = null;
 
@@ -7,7 +8,7 @@ export async function renderAttendance(container, employee) {
   container.innerHTML = `
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
       <h1 class="page-title" style="margin-bottom:0">Attendance</h1>
-      <button class="btn btn-dark" id="mark-att-btn">
+      <button class="btn btn-dark" id="mark-att-btn" ${isReadOnlyDemo(employee) ? 'disabled title="Disabled in public demo"' : ''}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Mark Attendance
       </button>
@@ -49,7 +50,7 @@ export async function renderAttendance(container, employee) {
   `;
 
   loadAttendanceData();
-  setupMarkAttendance();
+  setupMarkAttendance(employee);
 }
 
 const AVATAR_COLORS = ['#3B82F6','#22C55E','#F59E0B','#EF4444','#8B5CF6','#EC4899','#06B6D4','#6366F1'];
@@ -184,8 +185,9 @@ async function loadAttendanceData() {
   }
 }
 
-async function setupMarkAttendance() {
+async function setupMarkAttendance(employee) {
   document.getElementById('mark-att-btn')?.addEventListener('click', async () => {
+    if (blockDemoWrite(employee, 'Attendance updates are disabled in the public demo.')) return;
     const { data: emps } = await supabase.from('employees').select('id, name').eq('status', 'active').order('name');
     const modal = document.getElementById('att-modal');
     if (!modal) return;
@@ -242,6 +244,7 @@ async function setupMarkAttendance() {
 
     document.getElementById('att-form').addEventListener('submit', async (e) => {
       e.preventDefault();
+      if (blockDemoWrite(employee, 'Attendance updates are disabled in the public demo.')) return;
       const data = Object.fromEntries(new FormData(e.target));
       if (!data.check_in) delete data.check_in;
       if (!data.check_out) delete data.check_out;

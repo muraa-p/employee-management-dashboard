@@ -1,4 +1,5 @@
 import { supabase } from '../supabase.js';
+import { blockDemoWrite } from '../demo-mode.js';
 
 export async function renderMyProjects(container, employee) {
   container.innerHTML = `
@@ -126,6 +127,9 @@ async function showMyTasksModal(projectId, projectName, employee) {
   modal.addEventListener('change', async (e) => {
     if (e.target.matches('.task-status-select')) {
       const tid = e.target.dataset.tid;
+      if (blockDemoWrite(employee, 'Task updates are disabled in the public demo.')) {
+        return;
+      }
       await supabase.from('tasks').update({ status: e.target.value }).eq('id', tid);
       const check = modal.querySelector(`.task-item-check[data-tid="${tid}"]`);
       if (check) check.className = `task-item-check ${e.target.value}`;
@@ -214,6 +218,9 @@ async function showManageTeamModal(projectId, projectName, employee) {
   overlay.addEventListener('change', async (e) => {
     if (e.target.matches('.task-status-select')) {
       const tid = e.target.dataset.tid;
+      if (blockDemoWrite(employee, 'Task updates are disabled in the public demo.')) {
+        return;
+      }
       const { error } = await supabase.from('tasks').update({ status: e.target.value }).eq('id', tid);
       if (error) {
         alert('Failed to update task: ' + error.message);
@@ -228,6 +235,7 @@ async function showManageTeamModal(projectId, projectName, employee) {
 
   document.getElementById('team-add-task').addEventListener('submit', async (e) => {
     e.preventDefault();
+    if (blockDemoWrite(employee, 'Task creation is disabled in the public demo.')) return;
     const d = Object.fromEntries(new FormData(e.target));
     d.project_id = projectId;
     if (!d.assigned_to) delete d.assigned_to;
@@ -238,4 +246,3 @@ async function showManageTeamModal(projectId, projectName, employee) {
     document.getElementById('team-task-list').innerHTML = renderTaskList(updated);
   });
 }
-

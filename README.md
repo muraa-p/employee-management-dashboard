@@ -97,6 +97,7 @@ Copy `.env.example` to `.env` and add:
 ```bash
 VITE_SUPABASE_URL=your_supabase_project_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+VITE_PUBLIC_DEMO_MODE=false
 ```
 
 Important:
@@ -129,6 +130,9 @@ For Vercel, configure these project environment variables:
 
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_ANON_KEY`
+- `VITE_PUBLIC_DEMO_MODE`
+
+Set `VITE_PUBLIC_DEMO_MODE=true` when you are exposing shared public demo accounts and want the UI to run in read-only mode.
 
 ## Supabase Setup
 
@@ -137,6 +141,8 @@ The database and backend support files live in [`supabase/`](supabase/):
 - [`supabase/schema.sql`](supabase/schema.sql): core schema, indexes, helper functions, and demo-ready RLS policies
 - [`supabase/seed-demo.sql`](supabase/seed-demo.sql): starter data for departments, employees, projects, tasks, attendance, and leaves
 - [`supabase/functions/create-employee/index.ts`](supabase/functions/create-employee/index.ts): Edge Function used by the HR "Add Employee" flow
+
+The SQL also includes an `auth.users` linking trigger so fresh auth users can be connected back to employee rows by email during setup.
 
 ## Demo Accounts
 
@@ -147,7 +153,8 @@ Recommended approach:
 1. Run `supabase/schema.sql`
 2. Run `supabase/seed-demo.sql`
 3. Create matching Supabase Auth users for the seeded employee emails
-4. Set the frontend env vars locally and in Vercel
+4. Run `select public.sync_employee_auth_links();`
+5. Set the frontend env vars locally and in Vercel
 
 ## Notes For Public Repos
 

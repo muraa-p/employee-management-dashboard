@@ -1,4 +1,5 @@
 import { supabase } from '../supabase.js';
+import { blockDemoWrite, isReadOnlyDemo } from '../demo-mode.js';
 
 export async function renderLeaves(container, employee) {
   const isHR = employee?.role_type === 'hr';
@@ -6,7 +7,7 @@ export async function renderLeaves(container, employee) {
   container.innerHTML = `
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
       <h1 class="page-title" style="margin-bottom:0">${isHR ? 'Leave Management' : 'My Leaves'}</h1>
-      <button class="btn btn-dark" id="request-leave-btn">
+      <button class="btn btn-dark" id="request-leave-btn" ${isReadOnlyDemo(employee) ? 'disabled title="Disabled in public demo"' : ''}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         ${isHR ? 'Add Leave' : 'Request Leave'}
       </button>
@@ -106,12 +107,14 @@ async function loadLeaves(isHR, employee) {
   if (isHR) {
     grid.querySelectorAll('.btn-approve').forEach(btn => {
       btn.addEventListener('click', async () => {
+        if (blockDemoWrite(employee, 'Leave approval is disabled in the public demo.')) return;
         await supabase.from('leaves').update({ status: 'approved' }).eq('id', btn.dataset.lid);
         loadLeaves(isHR, employee);
       });
     });
     grid.querySelectorAll('.btn-reject').forEach(btn => {
       btn.addEventListener('click', async () => {
+        if (blockDemoWrite(employee, 'Leave rejection is disabled in the public demo.')) return;
         await supabase.from('leaves').update({ status: 'rejected' }).eq('id', btn.dataset.lid);
         loadLeaves(isHR, employee);
       });
@@ -121,6 +124,7 @@ async function loadLeaves(isHR, employee) {
 
 function setupRequestLeave(isHR, employee) {
   document.getElementById('request-leave-btn')?.addEventListener('click', async () => {
+    if (blockDemoWrite(employee, 'Leave requests are disabled in the public demo.')) return;
     let employeeSelect = '';
     if (isHR) {
       const { data: emps } = await supabase.from('employees').select('id, name').eq('status','active').order('name');
@@ -176,6 +180,7 @@ function setupRequestLeave(isHR, employee) {
 
     document.getElementById('leave-form').addEventListener('submit', async (e) => {
       e.preventDefault();
+      if (blockDemoWrite(employee, 'Leave requests are disabled in the public demo.')) return;
       const data = Object.fromEntries(new FormData(e.target));
       if (!isHR) { data.employee_id = employee.id; data.status = 'pending'; }
       if (!data.status) data.status = 'pending';

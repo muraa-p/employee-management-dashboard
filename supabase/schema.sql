@@ -182,10 +182,46 @@ begin
 end;
 $$;
 
+create or replace function public.link_employee_auth_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  update public.employees
+  set auth_user_id = new.id,
+      updated_at = timezone('utc', now())
+  where lower(email) = lower(new.email)
+    and auth_user_id is null;
+
+  return new;
+end;
+$$;
+
+create or replace function public.sync_employee_auth_links()
+returns void
+language sql
+security definer
+set search_path = public
+as $$
+  update public.employees e
+  set auth_user_id = u.id,
+      updated_at = timezone('utc', now())
+  from auth.users u
+  where lower(e.email) = lower(u.email)
+    and e.auth_user_id is distinct from u.id;
+$$;
+
 drop trigger if exists trg_sync_project_task_totals on public.tasks;
 create trigger trg_sync_project_task_totals
 after insert or update or delete on public.tasks
 for each row execute function public.sync_project_task_totals();
+
+drop trigger if exists on_auth_user_created_link_employee on auth.users;
+create trigger on_auth_user_created_link_employee
+after insert on auth.users
+for each row execute function public.link_employee_auth_user();
 
 alter table public.departments enable row level security;
 alter table public.employees enable row level security;

@@ -1,4 +1,5 @@
 import { supabase } from '../supabase.js';
+import { blockDemoWrite } from '../demo-mode.js';
 
 export async function renderMyTasks(container, employee) {
   container.innerHTML = `
@@ -96,6 +97,10 @@ async function loadAllMyTasks(employee, statusFilter) {
     sel.addEventListener('change', async (e) => {
       const tid = e.target.dataset.tid;
       const newStatus = e.target.value;
+      if (blockDemoWrite(employee, 'Task updates are disabled in the public demo.')) {
+        e.target.value = e.target.dataset.oldStatus || 'pending';
+        return;
+      }
       const { error } = await supabase.from('tasks').update({ status: newStatus }).eq('id', tid);
 
       if (error) {
