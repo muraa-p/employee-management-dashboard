@@ -1,164 +1,161 @@
-# Employee Dashboard
+# Employee Management Dashboard
 
-A production-ready employee management dashboard built with Vite, vanilla JavaScript, and Supabase.
+An employee management dashboard built with Vite, vanilla JavaScript, Chart.js, and Supabase.
 
-This project provides admin and employee workflows for:
-- Attendance tracking
-- Employee management
-- Project and task tracking
-- Leave request lifecycle (pending/approved/rejected)
-- Role-aware dashboard views
+It covers the typical internal operations stack for a small team: employee records, attendance tracking, leave management, project assignment, task progress, and role-based dashboard views for HR and employees.
 
-## Live Deployment
+## Live Demo
 
-- Production URL: `https://employee-dashboard-gamma-five.vercel.app`
-- Vercel Project: `employee-dashboard` (team: `freezys-projects-77042b3a`)
+- Repository: `https://github.com/muraa-p/employee-management-dashboard`
+- Live App: `https://employee-dashboard-gamma-five.vercel.app/`
+
+## Highlights
+
+- Role-aware experience for HR and employee users
+- Employee directory with department filters and profile management
+- Attendance overview with daily records and chart-based summaries
+- Leave request flow with approval and rejection handling
+- Project management with members, deadlines, and progress tracking
+- Task assignment and status updates for both managers and employees
+- Supabase-backed auth and relational data model
 
 ## Tech Stack
 
-- Frontend: Vite, JavaScript (ES Modules), Chart.js
-- Backend/BaaS: Supabase (Auth, Database, Edge Functions)
+- Frontend: Vite, JavaScript ES modules, HTML, CSS
+- Data/Auth: Supabase
+- Charts: Chart.js
 - Hosting: Vercel
 
-## Project Structure
+## Folder Structure
 
 ```text
 .
 |-- index.html
 |-- main.js
+|-- style.css
 |-- js/
 |   |-- router.js
 |   |-- supabase.js
 |   `-- pages/
-|       |-- dashboard.js
-|       |-- employee-dashboard.js
-|       |-- employees.js
-|       |-- attendance.js
-|       |-- leaves.js
-|       |-- projects.js
-|       |-- my-projects.js
-|       |-- my-tasks.js
-|       |-- my-attendance.js
-|       `-- settings.js
-|-- src/
 |-- public/
-`-- append_att.js
+|-- screenshots/
+`-- supabase/
+    |-- schema.sql
+    |-- seed-demo.sql
+    `-- functions/
+        `-- create-employee/
+            `-- index.ts
 ```
 
-## Core Modules
+## Features
 
-- `js/supabase.js`: Supabase client initialization and current employee resolver.
-- `js/router.js`: Route-level page rendering and navigation handling.
-- `js/pages/*`: Feature modules for each dashboard section.
-- `main.js`: App bootstrap, auth flow, top-level event wiring.
+### HR Workspace
+
+- View organization-level dashboard metrics
+- Manage employees and departments
+- Create projects and assign members
+- Create and manage project tasks
+- Record daily attendance
+- Review and resolve leave requests
+
+### Employee Workspace
+
+- Access a personal dashboard
+- View assigned projects and tasks
+- Update task progress
+- Review attendance history
+- Request leave
+- Update profile and password
+
+## Screenshots
+
+Add your captures to [`screenshots/`](screenshots/) using these names:
+
+- `login.png`
+- `hr-dashboard.png`
+- `employees.png`
+- `projects.png`
+- `attendance.png`
+- `leaves.png`
+- `employee-dashboard.png`
+- `my-tasks.png`
+
+Once you add them, this README is already structured for a gallery section update without changing the rest of the documentation.
 
 ## Local Setup
 
-### 1. Prerequisites
-
-- Node.js 18+ (recommended)
-- npm 9+ (recommended)
-- A Supabase project with required tables/policies/functions
-
-### 2. Install Dependencies
+### 1. Install dependencies
 
 ```bash
 npm install
 ```
 
-### 3. Configure Environment Variables
+### 2. Configure environment variables
 
-Copy `.env.example` to `.env` and fill in values:
+Copy `.env.example` to `.env` and add:
 
 ```bash
-cp .env.example .env
+VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
-Required variables:
-
-- `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_ANON_KEY`
-
 Important:
-- Use only the **anon/public** key in frontend.
-- Do **not** expose Supabase `service_role` keys in this repository or Vercel frontend env vars.
 
-### 4. Run Development Server
+- `VITE_` variables are public at runtime in a Vite frontend
+- the Supabase anon key is designed to be public
+- do not commit `.env`
+- do not expose `service_role` keys in the frontend
+
+### 3. Run the app
 
 ```bash
 npm run dev
 ```
 
-### 5. Build and Preview
+### 4. Build for production
 
 ```bash
 npm run build
 npm run preview
 ```
 
-## Security Notes (Supabase)
+## Deployment
 
-- The frontend consumes Supabase with `VITE_*` variables only.
-- Keep `.env` private (`.gitignore` already protects it).
-- Keep `service_role` keys server-side only (Edge Functions/secure backend).
-- Enforce Row Level Security (RLS) on all sensitive tables.
-- Validate authorization rules for admin-only mutations (employees/projects/tasks/leaves).
+The live site is deployed on Vercel:
 
-## Environment Variables
+- Production URL: `https://employee-dashboard-gamma-five.vercel.app/`
 
-| Name | Required | Description |
-|---|---|---|
-| `VITE_SUPABASE_URL` | Yes | Supabase project URL |
-| `VITE_SUPABASE_ANON_KEY` | Yes | Supabase public anon key |
+For Vercel, configure these project environment variables:
 
-## System Snapshots (Placeholders)
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
 
-Replace with actual screenshots after capturing from your running app.
+## Supabase Setup
 
-```text
-docs/snapshots/
-|-- 01-login.png
-|-- 02-admin-dashboard.png
-|-- 03-employees.png
-|-- 04-attendance.png
-|-- 05-projects.png
-|-- 06-my-tasks.png
-`-- 07-settings.png
-```
+The database and backend support files live in [`supabase/`](supabase/):
 
-### Snapshot Gallery
+- [`supabase/schema.sql`](supabase/schema.sql): core schema, indexes, helper functions, and demo-ready RLS policies
+- [`supabase/seed-demo.sql`](supabase/seed-demo.sql): starter data for departments, employees, projects, tasks, attendance, and leaves
+- [`supabase/functions/create-employee/index.ts`](supabase/functions/create-employee/index.ts): Edge Function used by the HR "Add Employee" flow
 
-![Login Screen](docs/snapshots/01-login.png)
-![Admin Dashboard](docs/snapshots/02-admin-dashboard.png)
-![Employees Module](docs/snapshots/03-employees.png)
-![Attendance Module](docs/snapshots/04-attendance.png)
-![Projects Module](docs/snapshots/05-projects.png)
-![My Tasks Module](docs/snapshots/06-my-tasks.png)
-![Settings Module](docs/snapshots/07-settings.png)
+## Demo Accounts
 
-## Git & Deployment Workflow
+For a clean public demo, keep dedicated demo users separate from your personal admin data.
 
-### GitHub
+Recommended approach:
 
-```bash
-git add .
-git commit -m "your message"
-git push origin main
-```
+1. Run `supabase/schema.sql`
+2. Run `supabase/seed-demo.sql`
+3. Create matching Supabase Auth users for the seeded employee emails
+4. Set the frontend env vars locally and in Vercel
 
-### Vercel (already configured)
+## Notes For Public Repos
 
-```bash
-npx vercel deploy -y
-```
-
-## Roadmap
-
-- Add automated tests (unit + integration)
-- Add CI checks (lint/build/test) on pull requests
-- Add role-based route guards and permission middleware
-- Add observability (error tracking + request monitoring)
+- Keep screenshots in the repo so visitors can preview the interface before logging in
+- Keep the live demo link near the top of the README
+- Keep Supabase secrets out of Git and configure them in Vercel instead
+- If you rotate the anon key later, update local `.env` and Vercel envs only
 
 ## License
 
-Private/internal use unless specified otherwise by repository owner.
+MIT
